@@ -13,7 +13,10 @@ echo "source ~/$env_name/bin/activate" >> ~/.bashrc
 bash
 
 git clone https://github.com/bayartsogt-ya/whisper-multiple-hf-datasets
-pip install -r whisper-multiple-hf-datasets/requirements.txt
+cd ./whisper-multiple-hf-datasets
+
+pip install -r requirements.txt
+pip install -e .
 
 git config --global credential.helper store
 huggingface-cli login

@@ -17,13 +17,14 @@ from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPaddin
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--train_datasets', default=None, help='dataset|config|splits,dataset|config|splits')
-    parser.add_argument('--eval_datasets',  default=None, help='dataset|config|splits,dataset|config|splits')
+    parser.add_argument('--eval_datasets', default=None, help='dataset|config|splits,dataset|config|splits')
     parser.add_argument('--interleave', action='store_true', help='')
     parser.add_argument('--whisper-size', default='small')
     parser.add_argument('--language', default='mn,Mongolian', help='acronym,Full Language Name')
     parser.add_argument('--train-batch-size', default=32)
     parser.add_argument('--eval-batch-size', default=16)
-    parser.add_argument('--max-steps', default=10000)
+    parser.add_argument('--max-steps', default=1000)
+    parser.add_argument('--version', default=1)
 
     args = parser.parse_args()
     
@@ -32,11 +33,14 @@ if __name__ == '__main__':
     model_name = f'openai/whisper-{args.whisper_size}'
     output_dir = f"whisper-{args.whisper_size}-{args.language.split(',')[0]}-{args.version}"
 
-    print(model_name)
-    print(output_dir)
+    print('model_name:', model_name)
+    print('output_dir:', output_dir)
 
     train_ds = merge_datasets(args.train_datasets, args.interleave)
+    print(train_ds)
     eval_ds = merge_datasets(args.eval_datasets, args.interleave)
+    print(eval_ds)
+
     
     config = WhisperConfig.from_pretrained(model_name)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(model_name)
