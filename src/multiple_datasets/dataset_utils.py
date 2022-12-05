@@ -30,7 +30,6 @@ def merge_datasets(dataset_string: str, interleave: bool):
     else: # just concat
         ds = concatenate_datasets(ds_list)
     
-    ds = ds.map(preprocess_func)
     return ds
 
 

@@ -10,7 +10,7 @@ from transformers import (
 
 # # local
 from multiple_datasets.utils import show_argparse
-from multiple_datasets.dataset_utils import merge_datasets
+from multiple_datasets.dataset_utils import merge_datasets, preprocess_func
 from multiple_datasets.evaluate_utils import get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
 
@@ -21,10 +21,11 @@ if __name__ == '__main__':
     parser.add_argument('--interleave', action='store_true', help='')
     parser.add_argument('--whisper-size', default='small')
     parser.add_argument('--language', default='mn,Mongolian', help='acronym,Full Language Name')
-    parser.add_argument('--train-batch-size', default=32)
-    parser.add_argument('--eval-batch-size', default=16)
-    parser.add_argument('--max-steps', default=1000)
-    parser.add_argument('--version', default=1)
+    parser.add_argument('--train-batch-size', default=32, type=int)
+    parser.add_argument('--eval-batch-size', default=16, type=int)
+    parser.add_argument('--max-steps', default=1000, type=int)
+    parser.add_argument('--version', default=1, type=int)
+    parser.add_argument('--num-workers', default=8, type=int)
 
     args = parser.parse_args()
     
@@ -37,8 +38,11 @@ if __name__ == '__main__':
     print('output_dir:', output_dir)
 
     train_ds = merge_datasets(args.train_datasets, args.interleave)
+    train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
     print(train_ds)
-    eval_ds = merge_datasets(args.eval_datasets, args.interleave)
+    
+    eval_ds = merge_datasets(args.eval_datasets, False)
+    eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
     print(eval_ds)
 
     
@@ -77,6 +81,9 @@ if __name__ == '__main__':
         greater_is_better=False,
         push_to_hub=True,
         remove_unused_columns=False, # important when we use set_transform
+
+        #
+        dataloader_num_workers=args.num_workers
     )
 
     trainer = Seq2SeqTrainer(
