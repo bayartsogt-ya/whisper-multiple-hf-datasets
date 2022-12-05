@@ -13,8 +13,9 @@ def merge_datasets(dataset_string: str, interleave: bool):
             ds = load_dataset(dataset_name, config, split=split, use_auth_token=True)
 
             # use same name for all datasets
-            prev_text_col = set(ds.column_names).intersection(audio_column_names).pop()
-            ds = ds.rename_column(prev_text_col, text_column)
+            if text_column not in ds.column_names:
+                prev_text_col = set(ds.column_names).intersection(audio_column_names).pop()
+                ds = ds.rename_column(prev_text_col, text_column)
 
             # remove unnecessary columns
             remove_cols = list(set(ds.column_names) - set(['audio', text_column]))
