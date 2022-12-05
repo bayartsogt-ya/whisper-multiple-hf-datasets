@@ -5,6 +5,6 @@ python train.py \
     --language "mn,Mongolian" \
     --train-batch-size 32 \
     --eval-batch-size 16 \
-    --max-steps 1000 \
+    --max-steps 15000 \
     --version 1 \
-    --num-workers 4 \
+    --num-workers 8 \

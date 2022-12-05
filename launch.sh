@@ -1,4 +1,5 @@
 nvidia-smi
+sudo apt install nvtop
 
 sudo add-apt-repository -y ppa:jonathonf/ffmpeg-4
 sudo apt update

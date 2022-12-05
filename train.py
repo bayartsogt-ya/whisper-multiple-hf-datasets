@@ -124,8 +124,10 @@ if __name__ == '__main__':
     trainer.push_to_hub(**{
         "finetuned_from": model_name,
         "tasks": "automatic-speech-recognition",
-        "tags": "whisper-event",
-        "dataset": "mozilla-foundation/common_voice_11_0 mn",
+        "tags": ["whisper-event", "hf-asr-leaderboard"],
+        "dataset": ["Common Voice 11.0"],
+        "dataset_tags": ["mozilla-foundation/common_voice_11_0"],
+        "dataset_metadata": [{"config": "mn", "split": "test"}],
         "language": "mn",
         "model_name": output_dir,
     })
