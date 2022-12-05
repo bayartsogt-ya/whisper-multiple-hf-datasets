@@ -47,8 +47,8 @@ if __name__ == '__main__':
     
     config = WhisperConfig.from_pretrained(model_name)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(model_name)
-    tokenizer = WhisperTokenizer.from_pretrained(model_name, language=args.language, task="transcribe")
-    processor = WhisperProcessor.from_pretrained(model_name, language=args.language, task="transcribe")
+    tokenizer = WhisperTokenizer.from_pretrained(model_name, language=args.language.split(',')[1], task="transcribe")
+    processor = WhisperProcessor.from_pretrained(model_name, language=args.language.split(',')[1], task="transcribe")
     
     model = WhisperForConditionalGeneration.from_pretrained(model_name)
     model.config.forced_decoder_ids = None
