@@ -62,8 +62,10 @@ if __name__ == '__main__':
     prepare_dataset_func = get_prepare_dataset_func(feature_extractor, tokenizer)
     train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
     eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
-    train_ds = train_ds.map(prepare_dataset_func, num_proc=args.num_workers)
-    eval_ds = eval_ds.map(prepare_dataset_func, num_proc=args.num_workers)
+
+    # TODO: cannot use the multi-processing because it shares a global object
+    train_ds = train_ds.map(prepare_dataset_func)
+    eval_ds = eval_ds.map(prepare_dataset_func)
 
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,  # change to a repo name of your choice
