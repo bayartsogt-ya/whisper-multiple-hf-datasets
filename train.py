@@ -10,7 +10,7 @@ from transformers import (
 
 # # local
 from multiple_datasets.utils import show_argparse
-from multiple_datasets.dataset_utils import merge_datasets, preprocess_func
+from multiple_datasets.dataset_utils import get_prepare_dataset_func, merge_datasets, preprocess_func
 from multiple_datasets.evaluate_utils import get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
 
@@ -37,12 +37,11 @@ if __name__ == '__main__':
     print('model_name:', model_name)
     print('output_dir:', output_dir)
 
+
     train_ds = merge_datasets(args.train_datasets, args.interleave)
-    train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
     print(train_ds)
     
     eval_ds = merge_datasets(args.eval_datasets, False)
-    eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
     print(eval_ds)
 
     
@@ -58,6 +57,13 @@ if __name__ == '__main__':
 
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
     compute_metrics = get_compute_metrics_func(tokenizer)
+
+    # data preprocessing
+    prepare_dataset_func = get_prepare_dataset_func(feature_extractor, tokenizer)
+    train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
+    eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
+    train_ds = train_ds.map(prepare_dataset_func, num_proc=args.num_workers)
+    eval_ds = eval_ds.map(prepare_dataset_func, num_proc=args.num_workers)
 
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,  # change to a repo name of your choice
