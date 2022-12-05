@@ -60,8 +60,8 @@ if __name__ == '__main__':
 
     # data preprocessing
     prepare_dataset_func = get_prepare_dataset_func(feature_extractor, tokenizer)
-    train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
-    eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
+    train_ds = train_ds.map(preprocess_func)
+    eval_ds = eval_ds.map(preprocess_func)
     train_ds = train_ds.map(prepare_dataset_func, num_proc=args.num_workers)
     eval_ds = eval_ds.map(prepare_dataset_func, num_proc=args.num_workers)
 
