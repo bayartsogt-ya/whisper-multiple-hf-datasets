@@ -48,7 +48,7 @@ def get_prepare_dataset_func(feature_extractor, tokenizer):
         batch["input_features"] = feature_extractor(audio["array"], sampling_rate=audio["sampling_rate"]).input_features[0]
 
         # encode target text to label ids 
-        batch["labels"] = tokenizer(batch["sentence"]).input_ids
+        batch["labels"] = tokenizer(batch[text_column]).input_ids
         return batch
-        
+
     return prepare_dataset
