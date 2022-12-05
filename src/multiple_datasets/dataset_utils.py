@@ -9,6 +9,7 @@ def merge_datasets(dataset_string: str, interleave: bool):
     ds_list = []
     for dataset_name in dataset_string.split(','):
         dataset_name, config, splits = dataset_name.split('|')
+        config = config if config else None
         for split in splits.split('+'):
             ds = load_dataset(dataset_name, config, split=split, use_auth_token=True)
 
