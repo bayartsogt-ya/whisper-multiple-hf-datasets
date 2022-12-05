@@ -1,6 +1,6 @@
 python train.py \
-    --train_datasets mozilla-foundation/common_voice_11_0|mn|train+validation,google/fleurs|mn_mn|train+validation \
-    --eval_datasets mozilla-foundation/common_voice_11_0|mn|test \
+    --train_datasets "mozilla-foundation/common_voice_11_0|mn|train+validation,google/fleurs|mn_mn|train+validation" \
+    --eval_datasets "mozilla-foundation/common_voice_11_0|mn|test" \
     --whisper-size small \
     --language mn,Mongolian \
     --train-batch-size 32 \
