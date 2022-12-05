@@ -9,7 +9,7 @@ git-lfs -v
 git lfs install
 
 python3 -m venv venv
-echo "source venv/bin/activate" >> ~/.bashrc
+echo "source ~/whisper-multiple-hf-datasets/venv/bin/activate" >> ~/.bashrc
 bash
 
 pip install -r requirements.txt
