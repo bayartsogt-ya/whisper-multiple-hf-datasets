@@ -1,7 +1,7 @@
 import re
 from datasets import load_dataset, interleave_datasets, concatenate_datasets, Audio
 
-audio_column_names = set(['sentence', 'transcription'])
+audio_column_names = set(['sentence', 'transcription', 'transciption'])
 text_column = 'transcription'
 keep_chars = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
 
