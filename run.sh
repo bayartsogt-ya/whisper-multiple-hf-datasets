@@ -6,5 +6,5 @@ python train.py \
     --train-batch-size 32 \
     --eval-batch-size 16 \
     --max-steps 15000 \
-    --version 1 \
     --num-workers 8 \
+    --version 2 \
