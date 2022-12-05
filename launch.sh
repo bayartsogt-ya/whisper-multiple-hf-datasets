@@ -9,7 +9,7 @@ git-lfs -v
 git lfs install
 
 python3 -m venv venv
-echo "source ~/$env_name/bin/activate" >> ~/.bashrc
+echo "source ~/venv/bin/activate" >> ~/.bashrc
 bash
 
 pip install -r requirements.txt
