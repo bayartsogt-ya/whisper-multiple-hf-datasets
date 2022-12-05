@@ -1,4 +1,5 @@
 import argparse
+from multiple_datasets.hub_defaut_utils import push_to_hub_using_whisper_template
 from transformers import (
     WhisperConfig,
     WhisperFeatureExtractor,
@@ -13,6 +14,7 @@ from multiple_datasets.utils import show_argparse
 from multiple_datasets.dataset_utils import get_prepare_dataset_func, merge_datasets, preprocess_func
 from multiple_datasets.evaluate_utils import get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -30,10 +32,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     show_argparse(args)
+    lan, language = args.language.split(',')
 
     model_name = f'openai/whisper-{args.whisper_size}'
-    output_dir = f"whisper-{args.whisper_size}-{args.language.split(',')[0]}-{args.version}"
-
+    output_dir = f"whisper-{args.whisper_size}-{lan}-{args.version}"
+    
     print('model_name:', model_name)
     print('output_dir:', output_dir)
 
@@ -47,8 +50,8 @@ if __name__ == '__main__':
     
     config = WhisperConfig.from_pretrained(model_name)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(model_name)
-    tokenizer = WhisperTokenizer.from_pretrained(model_name, language=args.language.split(',')[1], task="transcribe")
-    processor = WhisperProcessor.from_pretrained(model_name, language=args.language.split(',')[1], task="transcribe")
+    tokenizer = WhisperTokenizer.from_pretrained(model_name, language=language, task="transcribe")
+    processor = WhisperProcessor.from_pretrained(model_name, language=language, task="transcribe")
     
     model = WhisperForConditionalGeneration.from_pretrained(model_name)
     model.config.forced_decoder_ids = None
@@ -121,14 +124,4 @@ if __name__ == '__main__':
     tokenizer.save_pretrained(training_args.output_dir)
     config.save_pretrained(training_args.output_dir)
     
-    trainer.push_to_hub(**{
-        "finetuned_from": model_name,
-        "tasks": "automatic-speech-recognition",
-        "tags": ["whisper-event", "hf-asr-leaderboard"],
-        "dataset": ["Common Voice 11.0"],
-        "dataset_tags": ["mozilla-foundation/common_voice_11_0"],
-        "dataset_metadata": [{"config": "mn", "split": "test"}],
-        "language": "mn",
-        "model_name": output_dir,
-    })
-
+    push_to_hub_using_whisper_template(trainer, model_name, output_dir, lan)
