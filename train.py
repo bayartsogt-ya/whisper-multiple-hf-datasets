@@ -6,7 +6,7 @@ from transformers import (
     WhisperProcessor,
     WhisperForConditionalGeneration,
     Seq2SeqTrainingArguments,
-    Seq2SeqTrainer,)
+    Seq2SeqTrainer)
 
 # # local
 from multiple_datasets.utils import show_argparse
