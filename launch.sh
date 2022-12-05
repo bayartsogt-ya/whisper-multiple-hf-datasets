@@ -12,9 +12,6 @@ python3 -m venv venv
 echo "source ~/$env_name/bin/activate" >> ~/.bashrc
 bash
 
-git clone https://github.com/bayartsogt-ya/whisper-multiple-hf-datasets
-cd ./whisper-multiple-hf-datasets
-
 pip install -r requirements.txt
 pip install -e .
 
