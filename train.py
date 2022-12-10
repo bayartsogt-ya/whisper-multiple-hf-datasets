@@ -1,5 +1,4 @@
 import argparse
-from multiple_datasets.hub_defaut_utils import push_to_hub_using_whisper_template
 from transformers import (
     WhisperConfig,
     WhisperFeatureExtractor,
@@ -14,6 +13,7 @@ from multiple_datasets.utils import show_argparse
 from multiple_datasets.dataset_utils import get_prepare_dataset_func, merge_datasets, preprocess_func
 from multiple_datasets.evaluate_utils import get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
+from multiple_datasets.hub_default_utils import push_to_hub_using_whisper_template
 
 
 if __name__ == '__main__':

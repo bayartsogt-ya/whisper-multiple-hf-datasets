@@ -3,6 +3,8 @@ torch>=1.7
 torchaudio
 git+https://github.com/huggingface/transformers
 git+https://github.com/huggingface/datasets
+git+https://github.com/openai/whisper.git 
+
 librosa
 jiwer
 evaluate>=0.3.0
