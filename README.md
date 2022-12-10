@@ -35,5 +35,5 @@ convert_hf_whisper(model, whisper_checkpoint_path)
 import whisper
 model = whisper.load_model(whisper_model_path)
 result = model.transcribe('loooong_audio_path.wav') # probably longer than 10 min? hour?
-print(result['text']
+print(result['text'])
 ```
