@@ -3,7 +3,7 @@ from datasets import load_dataset, interleave_datasets, concatenate_datasets, Au
 
 audio_column_names = set(['sentence', 'transcription', 'transciption'])
 text_column = 'transcription'
-keep_chars = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
+KEEP_CHARS = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
 
 def merge_datasets(dataset_string: str, interleave: bool):
     ds_list = []
@@ -33,10 +33,11 @@ def merge_datasets(dataset_string: str, interleave: bool):
     
     return ds
 
-
-def preprocess_func(batch):
-    batch[text_column] = re.sub(f"[^{keep_chars}]", "", batch[text_column].lower())
-    return batch
+def get_preprocess_func(keep_chars):
+    def preprocess_func(batch):
+        batch[text_column] = re.sub(f"[^{keep_chars}]", "", batch[text_column].lower())
+        return batch
+    return preprocess_func
 
 def get_prepare_dataset_func(feature_extractor, tokenizer):
     # # no transform everything is in 

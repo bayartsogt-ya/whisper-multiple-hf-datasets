@@ -3,6 +3,7 @@ python train.py \
     --eval_datasets "mozilla-foundation/common_voice_11_0|mn|test" \
     --whisper-size "small" \
     --language "mn,Mongolian" \
+    --keep-chars " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя.,?!" \
     --train-batch-size 32 \
     --eval-batch-size 16 \
     --max-steps 15000 \

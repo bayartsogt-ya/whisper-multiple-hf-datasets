@@ -10,7 +10,11 @@ from transformers import (
 
 # # local
 from multiple_datasets.utils import show_argparse
-from multiple_datasets.dataset_utils import get_prepare_dataset_func, merge_datasets, preprocess_func
+from multiple_datasets.dataset_utils import (
+    get_prepare_dataset_func,
+    merge_datasets,
+    get_preprocess_func,
+    KEEP_CHARS)
 from multiple_datasets.evaluate_utils import get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
 from multiple_datasets.hub_default_utils import push_to_hub_using_whisper_template
@@ -23,6 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--interleave', action='store_true', help='')
     parser.add_argument('--whisper-size', default='small')
     parser.add_argument('--language', default='mn,Mongolian', help='acronym,Full Language Name')
+    parser.add_argument('--keep-chars', default=KEEP_CHARS, help='characters that would stay during preprocessing')
     parser.add_argument('--train-batch-size', default=32, type=int)
     parser.add_argument('--eval-batch-size', default=16, type=int)
     parser.add_argument('--max-steps', default=1000, type=int)
@@ -41,13 +46,14 @@ if __name__ == '__main__':
     print('output_dir:', output_dir)
 
 
+    ## Preprocess
     train_ds = merge_datasets(args.train_datasets, args.interleave)
     print(train_ds)
     
     eval_ds = merge_datasets(args.eval_datasets, False)
     print(eval_ds)
 
-    
+    ## Load
     config = WhisperConfig.from_pretrained(model_name)
     feature_extractor = WhisperFeatureExtractor.from_pretrained(model_name)
     tokenizer = WhisperTokenizer.from_pretrained(model_name, language=language, task="transcribe")
@@ -62,6 +68,7 @@ if __name__ == '__main__':
     compute_metrics = get_compute_metrics_func(tokenizer)
 
     # data preprocessing
+    preprocess_func = get_preprocess_func(args.keep_chars)
     prepare_dataset_func = get_prepare_dataset_func(feature_extractor, tokenizer)
     train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
     eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
@@ -70,6 +77,7 @@ if __name__ == '__main__':
     train_ds = train_ds.map(prepare_dataset_func)
     eval_ds = eval_ds.map(prepare_dataset_func)
 
+    # Train
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,  # change to a repo name of your choice
         per_device_train_batch_size=args.train_batch_size,
