@@ -12,7 +12,7 @@ KEEP_CHARS = " абвгдеёжзийклмноөпрстуүфхцчшъыьэ�
 def get_preprocessed_dataset_name(dataset_name, config, split):
     preprocessed_dataset_name = ['pp'] # pp stands for pre-processed
     preprocessed_dataset_name.append(dataset_name.split('/')[-1])
-    preprocessed_dataset_name.append(config)
+    if config: preprocessed_dataset_name.append(config)
     preprocessed_dataset_name.append(split)
     preprocessed_dataset_name = '-'.join(preprocessed_dataset_name)
     return preprocessed_dataset_name
