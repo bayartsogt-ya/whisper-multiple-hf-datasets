@@ -11,11 +11,9 @@ from transformers import (
 # # local
 from multiple_datasets.utils import show_argparse
 from multiple_datasets.dataset_utils import (
-    get_prepare_dataset_func,
     merge_datasets,
-    get_preprocess_func,
     KEEP_CHARS)
-from multiple_datasets.evaluate_utils import get_compute_metrics_func
+from multiple_datasets.evaluate_utils import evaluate_and_save, get_compute_metrics_func
 from multiple_datasets.data_collators import DataCollatorSpeechSeq2SeqWithPadding
 from multiple_datasets.hub_default_utils import push_to_hub_using_whisper_template
 
@@ -31,8 +29,13 @@ if __name__ == '__main__':
     parser.add_argument('--train-batch-size', default=32, type=int)
     parser.add_argument('--eval-batch-size', default=16, type=int)
     parser.add_argument('--max-steps', default=1000, type=int)
-    parser.add_argument('--version', default=1, type=int)
     parser.add_argument('--num-workers', default=8, type=int)
+    parser.add_argument('--version', default=1, type=int)
+
+    # for reading and writing preprocessed dataset
+    parser.add_argument('--read-from-preprocessed', action='store_true', help='if True, it will try to read from preprocessed dataset handle')
+    parser.add_argument('--hf-username', type=str, required=True)
+
 
     args = parser.parse_args()
     
@@ -44,14 +47,6 @@ if __name__ == '__main__':
     
     print('model_name:', model_name)
     print('output_dir:', output_dir)
-
-
-    ## Preprocess
-    train_ds = merge_datasets(args.train_datasets, args.interleave)
-    print(train_ds)
-    
-    eval_ds = merge_datasets(args.eval_datasets, False)
-    print(eval_ds)
 
     ## Load
     config = WhisperConfig.from_pretrained(model_name)
@@ -67,15 +62,18 @@ if __name__ == '__main__':
     data_collator = DataCollatorSpeechSeq2SeqWithPadding(processor=processor)
     compute_metrics = get_compute_metrics_func(tokenizer)
 
-    # data preprocessing
-    preprocess_func = get_preprocess_func(args.keep_chars)
-    prepare_dataset_func = get_prepare_dataset_func(feature_extractor, tokenizer)
-    train_ds = train_ds.map(preprocess_func, num_proc=args.num_workers)
-    eval_ds = eval_ds.map(preprocess_func, num_proc=args.num_workers)
 
-    # TODO: cannot use the multi-processing because it shares a global object
-    train_ds = train_ds.map(prepare_dataset_func)
-    eval_ds = eval_ds.map(prepare_dataset_func)
+    ## Preprocess
+    train_ds = merge_datasets(
+        args.train_datasets, args.interleave,
+        args.keep_chars, feature_extractor, tokenizer,
+        args.hf_username, args.read_from_preprocessed, args.num_workers)
+    
+    eval_ds = merge_datasets(
+        args.eval_datasets, False,
+        args.keep_chars, feature_extractor, tokenizer,
+        args.hf_username, args.read_from_preprocessed, args.num_workers)
+
 
     # Train
     training_args = Seq2SeqTrainingArguments(
@@ -115,21 +113,14 @@ if __name__ == '__main__':
         tokenizer=processor.feature_extractor,
     )
 
-    trainer.train()
-    
-    metrics = trainer.evaluate(
-        metric_key_prefix="eval",
-        max_length=training_args.generation_max_length,
-        num_beams=training_args.generation_num_beams,
+    try:
+        trainer.train()
+    except KeyboardInterrupt:
+        print('KEYBOARD INTERRUPTED! Starting evaluation with current state')
+        trainer.is_in_train = False
+        
+    metrics = evaluate_and_save(trainer, tokenizer, feature_extractor)
+
+    push_to_hub_using_whisper_template(
+        args.train_datasets, args.hf_username, metrics, lan, output_dir
     )
-
-    trainer.log_metrics("eval", metrics)
-    trainer.save_metrics("eval", metrics)
-    trainer.save_model()
-    trainer.save_state()
-
-    feature_extractor.save_pretrained(training_args.output_dir)
-    tokenizer.save_pretrained(training_args.output_dir)
-    config.save_pretrained(training_args.output_dir)
-    
-    push_to_hub_using_whisper_template(trainer, model_name, output_dir, lan)

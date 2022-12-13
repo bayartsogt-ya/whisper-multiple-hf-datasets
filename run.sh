@@ -8,4 +8,6 @@ python train.py \
     --eval-batch-size 16 \
     --max-steps 15000 \
     --num-workers 8 \
+    --hf-username <your-huggingface-username> \
+    --read-from-preprocessed \
     --version 2 \

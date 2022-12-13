@@ -1,6 +1,7 @@
 from copy import deepcopy
 import torch
 from transformers import WhisperForConditionalGeneration
+from huggingface_hub import metadata_update
 
 
 WHISPER_MAPPING = {
@@ -66,14 +67,56 @@ def convert_hf_whisper(hf_model_name_or_path: str, whisper_state_path: str):
     torch.save({"dims": dims, "model_state_dict": state_dict}, whisper_state_path)
 
 
-def push_to_hub_using_whisper_template(trainer, finetuned_from, model_name, language):
-    trainer.push_to_hub(**{
-        "finetuned_from": finetuned_from,
-        "tasks": "automatic-speech-recognition",
-        "tags": ["whisper-event", "hf-asr-leaderboard"],
-        "dataset": ["Common Voice 11.0"],
-        "dataset_tags": ["mozilla-foundation/common_voice_11_0"],
-        # "dataset_metadata": [{"config": language, "split": "test"}],
-        "language": language,
-        "model_name": model_name,
-    })
+def push_to_hub_using_whisper_template(train_datasets, hf_username, metrics, language, output_dir):
+    """Update the metadata of the README accordingly for `whisper-event`.
+
+    Args:
+        dataset_string (str): dataset_name|config|split
+        hf_username (string): huggingface user handle
+        metrics (dict): calculated metrics
+        language (_type_): language acronym (e.g. `mn`)
+        output_dir (_type_): huggingface model handle (e.g. `whisper-small-mn-1`)
+    """
+    
+    metadata = {
+        'license': 'apache-2.0',
+        'tags': ['whisper-event', 'hf-asr-leaderboard', 'generated_from_multiple_datasets'],
+        'language': language,
+        'datasets': [dataset_handle.split('|')[0] for dataset_handle in train_datasets.split(',')],
+        'metrics': ['wer', 'cer'],
+        'model-index': [
+            {
+                'name': output_dir,
+                'results': [
+                    {
+                        'task': {
+                            'name': 'Automatic Speech Recognition',
+                            'type': 'automatic-speech-recognition'
+                        },
+                        'dataset': {
+                            'name': 'Common Voice 11.0',
+                            'type': 'mozilla-foundation/common_voice_11_0',
+                            'config': language,
+                            'split': 'test',
+                        },
+                        'metrics': [
+                            {
+                                'name': 'Wer',
+                                'type': 'wer',
+                                'value': metrics['eval_wer']
+                            },
+                            {
+                                'name': 'Cer',
+                                'type': 'cer',
+                                'value': metrics['eval_cer']
+                            },
+                        ],
+                    }
+                ]
+            }
+        ]
+    }
+
+    url = metadata_update(f"{hf_username}/{output_dir}", metadata)
+    print('URL to commit ->', url)
+    return url

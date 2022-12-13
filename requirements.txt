@@ -4,6 +4,7 @@ torchaudio
 git+https://github.com/huggingface/transformers
 git+https://github.com/huggingface/datasets
 git+https://github.com/openai/whisper.git 
+huggingface_hub
 
 librosa
 jiwer

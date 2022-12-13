@@ -24,3 +24,24 @@ def get_compute_metrics_func(tokenizer):
         }
     
     return compute_metrics
+
+
+def evaluate_and_save(trainer, tokenizer, feature_extractor):
+    training_args = trainer.args
+    metrics = trainer.evaluate(
+        metric_key_prefix="eval",
+        max_length=training_args.generation_max_length,
+        num_beams=training_args.generation_num_beams,
+    )
+
+    trainer.log_metrics("eval", metrics)
+    trainer.save_metrics("eval", metrics)
+    trainer.save_model()
+    trainer.save_state()
+
+    feature_extractor.save_pretrained(training_args.output_dir)
+    tokenizer.save_pretrained(training_args.output_dir)
+    trainer.model.config.save_pretrained(training_args.output_dir)
+    trainer.push_to_hub()
+
+    return metrics
