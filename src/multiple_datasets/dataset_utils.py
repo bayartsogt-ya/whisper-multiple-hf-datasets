@@ -29,34 +29,35 @@ def read_single_dataset(
     if read_from_preprocessed:
         # read from preprocessed dataset repo
         # TODO: check not just name but if all the metadata args matches our expectation
-        # cached dataset will always read with `train` split 
-        preprocessed_dataset_name = username + '/' + preprocessed_dataset_name
-        print(f'--------> Reading from HF Hub {preprocessed_dataset_name}')
-        ds = load_dataset(preprocessed_dataset_name, split='train', use_auth_token=True)
+        # cached dataset will always read with `train` split
+        print(f'--------> Reading from HF Hub {username + "/" + preprocessed_dataset_name}')
+        try:
+            return load_dataset(username + '/' + preprocessed_dataset_name, split='train', use_auth_token=True)
+        except FileNotFoundError as e:
+            print(f'Could not find the {preprocessed_dataset_name}. So creating it from the scratch.')
 
-    else:
-        ds = load_dataset(dataset_name, config, split=split, use_auth_token=True)
+    ds = load_dataset(dataset_name, config, split=split, use_auth_token=True)
 
-        # use same name for all datasets
-        if text_column not in ds.column_names:
-            prev_text_col = set(ds.column_names).intersection(audio_column_names).pop()
-            ds = ds.rename_column(prev_text_col, text_column)
+    # use same name for all datasets
+    if text_column not in ds.column_names:
+        prev_text_col = set(ds.column_names).intersection(audio_column_names).pop()
+        ds = ds.rename_column(prev_text_col, text_column)
 
-        # remove unnecessary columns
-        remove_cols = list(set(ds.column_names) - set(['audio', text_column]))
-        ds = ds.remove_columns(remove_cols)
+    # remove unnecessary columns
+    remove_cols = list(set(ds.column_names) - set(['audio', text_column]))
+    ds = ds.remove_columns(remove_cols)
 
-        # preprocess
-        ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
+    # preprocess
+    ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
 
-        # make preprocessing here
-        assert type(ds) == Dataset
-        ds = ds.map(preprocess_func, num_proc=num_workers)
-        ds = ds.map(prepare_dataset_func)
+    # make preprocessing here
+    assert type(ds) == Dataset
+    ds = ds.map(preprocess_func, num_proc=num_workers)
+    ds = ds.map(prepare_dataset_func)
 
-        # write a preprocessed dataset to huggingface hub
-        print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
-        ds.push_to_hub(preprocessed_dataset_name, private=True)
+    # write a preprocessed dataset to huggingface hub
+    print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
+    ds.push_to_hub(preprocessed_dataset_name, private=True)
     
     return ds
 

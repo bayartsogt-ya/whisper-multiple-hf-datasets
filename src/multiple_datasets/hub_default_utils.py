@@ -117,6 +117,6 @@ def push_to_hub_using_whisper_template(train_datasets, hf_username, metrics, lan
         ]
     }
 
-    url = metadata_update(f"{hf_username}/{output_dir}", metadata)
+    url = metadata_update(f"{hf_username}/{output_dir}", metadata, overwrite=True)
     print('URL to commit ->', url)
     return url
