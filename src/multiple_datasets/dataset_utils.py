@@ -34,7 +34,7 @@ def read_single_dataset(
         try:
             return load_dataset(username + '/' + preprocessed_dataset_name, split='train', use_auth_token=True)
         except FileNotFoundError as e:
-            print(f'Could not find the {preprocessed_dataset_name}. So creating it from the scratch.')
+            print(f'Could not find the {username + "/" + preprocessed_dataset_name}. So creating it from the scratch.')
 
     ds = load_dataset(dataset_name, config, split=split, use_auth_token=True)
 
