@@ -98,7 +98,8 @@ if __name__ == '__main__':
         greater_is_better=False,
         push_to_hub=True,
         remove_unused_columns=False, # important when we use set_transform
-
+        save_total_limit=5,
+        resume_from_checkpoint=True,
         #
         dataloader_num_workers=args.num_workers
     )

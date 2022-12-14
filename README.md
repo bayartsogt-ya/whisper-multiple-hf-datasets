@@ -7,7 +7,7 @@ Whisper fine-tuning event script to use multiple hf datasets
 This works for only **Mongolian** for now but feel free to change
 `multiple_datasets.dataset_utils.keep_chars` variable for preprocessing.
 
-```
+```bash
 python train.py \
     --train_datasets "mozilla-foundation/common_voice_11_0|mn|train+validation,google/fleurs|mn_mn|train+validation" \
     --eval_datasets "mozilla-foundation/common_voice_11_0|mn|test" \
@@ -17,7 +17,9 @@ python train.py \
     --eval-batch-size 16 \
     --max-steps 15000 \
     --num-workers 8 \
-    --version 1 \
+    --read-from-preprocessed \
+    --hf-username 'your-huggingface-name' \
+    --version 1
 ```
 
 ### Convert Huggingface model to `whisper` model
