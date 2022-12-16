@@ -39,7 +39,7 @@ def read_single_dataset(
         # cached dataset will always read with `train` split
         print(f'--------> Reading from HF Hub {username + "/" + preprocessed_dataset_name}')
         try:
-            return load_dataset(username + '/' + preprocessed_dataset_name, split='train', use_auth_token=True)
+            return load_dataset(username + '/' + preprocessed_dataset_name, split=split, use_auth_token=True)
         except FileNotFoundError as e:
             print(f'Could not find the {username + "/" + preprocessed_dataset_name}. So creating it from the scratch.')
 
