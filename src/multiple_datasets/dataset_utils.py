@@ -1,16 +1,20 @@
 import re
+import numpy as np
 from datasets import load_dataset, interleave_datasets, concatenate_datasets, Audio, Dataset
 from transformers import PreTrainedTokenizer
 from transformers.feature_extraction_utils import FeatureExtractionMixin
 
 
-audio_column_names = set(['sentence', 'transcription', 'transciption'])
+text_column_names = set(['sentence', 'transcription', 'transciption']) # possible text column choices
+audio_column = 'audio'
 text_column = 'transcription'
+MAX_AUDIO_DURATION = 30
 KEEP_CHARS = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
+DEFAULT_SAMPLING_RATE = 16_000
 
 
-def get_preprocessed_dataset_name(dataset_name, config, split):
-    preprocessed_dataset_name = ['pp'] # pp stands for pre-processed
+def get_preprocessed_dataset_name(dataset_name, config, split, prefix):
+    preprocessed_dataset_name = [prefix]
     preprocessed_dataset_name.append(dataset_name.split('/')[-1])
     if config: preprocessed_dataset_name.append(config)
     preprocessed_dataset_name.append(split)
@@ -21,10 +25,13 @@ def get_preprocessed_dataset_name(dataset_name, config, split):
 def read_single_dataset(
     dataset_name: str, config: str, split: str, # dataset info
     preprocess_func, prepare_dataset_func, # preprocessing functions
-    username: str, read_from_preprocessed: bool=False, # read from preprocessed dataset
-    num_workers: int=1,
+    username: str, read_from_preprocessed: bool, # read from preprocessed dataset
+    num_workers: int, merge_audio_to_max: bool
 ):
-    preprocessed_dataset_name = get_preprocessed_dataset_name(dataset_name, config, split)
+    # pp -> Pre-Processed
+    # mpp -> Merge audios to 30 sec and Pre-Processed
+    prefix = ('m' if merge_audio_to_max else '') + 'pp'
+    preprocessed_dataset_name = get_preprocessed_dataset_name(dataset_name, config, split, prefix)
 
     if read_from_preprocessed:
         # read from preprocessed dataset repo
@@ -40,7 +47,7 @@ def read_single_dataset(
 
     # use same name for all datasets
     if text_column not in ds.column_names:
-        prev_text_col = set(ds.column_names).intersection(audio_column_names).pop()
+        prev_text_col = set(ds.column_names).intersection(text_column_names).pop()
         ds = ds.rename_column(prev_text_col, text_column)
 
     # remove unnecessary columns
@@ -52,6 +59,11 @@ def read_single_dataset(
 
     # make preprocessing here
     assert type(ds) == Dataset
+    if merge_audio_to_max:
+        print('[IMPORTANT] dataset size BEFORE merging:', ds.num_rows)
+        ds = ds.map(merge_audio_mapper, batched=True, batch_size=30, remove_columns=list(ds.features))
+        print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
+
     ds = ds.map(preprocess_func, num_proc=num_workers)
     ds = ds.map(prepare_dataset_func)
 
@@ -65,7 +77,7 @@ def read_single_dataset(
 def merge_datasets(
     dataset_string: str, interleave: bool,
     keep_chars: str, feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer,
-    username: str, read_from_preprocessed: bool, num_workers: int) -> Dataset:
+    username: str, read_from_preprocessed: bool, num_workers: int, merge_audio_to_max: bool) -> Dataset:
     """Read multiple datasets and upload preprocessed dataset for reading later on.
 
     Args:
@@ -77,13 +89,14 @@ def merge_datasets(
         username (str): huggingface handle for reading preprocessed dataset
         read_from_preprocessed (bool): whether to lead from preprocessed or not
         num_workers (int): number of workers to be used during `map` processing
+        merge_audio_to_max (bool): if True, then it will merge audios to `MAX_AUDIO_DURATION`
 
     Returns:
         dataset (Dataset): preprocesed and merged dataset
     """
 
     preprocess_func = get_preprocess_func(keep_chars)
-    prepare_dataset = get_prepare_dataset_func(feature_extractor, tokenizer)
+    prepare_dataset = get_prepare_dataset_func(feature_extractor, tokenizer, merge_audio_to_max)
 
     ds_list = []
     for dataset_name in dataset_string.split(','):
@@ -93,7 +106,7 @@ def merge_datasets(
             ds = read_single_dataset(
                 dataset_name, config, split,
                 preprocess_func, prepare_dataset, 
-                username, read_from_preprocessed, num_workers,
+                username, read_from_preprocessed, num_workers, merge_audio_to_max
             )
             ds_list.append(ds)
 
@@ -112,18 +125,36 @@ def get_preprocess_func(keep_chars):
     return preprocess_func
 
 
-def get_prepare_dataset_func(feature_extractor, tokenizer):
-    # # no transform everything is in 
+def get_prepare_dataset_func(feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer, merge_audio_to_max: bool):
+    """_summary_
+
+    Args:
+        feature_extractor (FeatureExtractionMixin): _description_
+        tokenizer (PreTrainedTokenizer): _description_
+        merge_audio_to_max (bool): if `True`, we can assume that `merge_audio_mapper` applied and `audio` column no longer exists.
+    """
     def prepare_dataset(batch):
-        
-        # load and resample audio data from 48 to 16kHz
-        audio = batch["audio"]
-
-        # compute log-Mel input features from input audio array 
+        audio = batch if merge_audio_to_max else batch["audio"]
         batch["input_features"] = feature_extractor(audio["array"], sampling_rate=audio["sampling_rate"]).input_features[0]
-
-        # encode target text to label ids 
         batch["labels"] = tokenizer(batch[text_column]).input_ids
         return batch
 
     return prepare_dataset
+
+
+def merge_audio_mapper(batch):
+    bs = len(batch[text_column])
+    result = {'array': [], text_column: [], 'sampling_rate': []}
+    list_arr, list_text, total = [], [], 0
+    for i in range(bs + 1):
+        if i == bs or total + batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE > MAX_AUDIO_DURATION:
+            result['array'].append(np.concatenate(list_arr))
+            result[text_column].append(' '.join(list_text))
+            result['sampling_rate'].append(DEFAULT_SAMPLING_RATE)
+            list_arr, list_text, total = [], [], 0
+        if i < bs:
+            list_arr.append(batch[audio_column][i]['array'])
+            list_text.append(batch[text_column][i])
+            total += batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
+    return result
+
