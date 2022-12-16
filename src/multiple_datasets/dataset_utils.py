@@ -24,7 +24,7 @@ def get_preprocessed_dataset_name(dataset_name, config, split, prefix):
 
 def read_single_dataset(
     dataset_name: str, config: str, split: str, # dataset info
-    preprocess_func, prepare_dataset_func, # preprocessing functions
+    keep_chars: str, feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer,
     username: str, read_from_preprocessed: bool, # read from preprocessed dataset
     num_workers: int, merge_audio_to_max: bool
 ):
@@ -61,11 +61,12 @@ def read_single_dataset(
     assert type(ds) == Dataset
     if merge_audio_to_max:
         print('[IMPORTANT] dataset size BEFORE merging:', ds.num_rows)
-        ds = ds.map(merge_audio_mapper, batched=True, batch_size=30, remove_columns=list(ds.features))
-        ds.set_format(type="np")
+        mapper = get_batch_mapper_merging_max_duration(keep_chars, feature_extractor, tokenizer)
+        ds = ds.map(mapper, batched=True, batch_size=30, remove_columns=list(ds.features), num_proc=2)
         print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
-    ds = ds.map(preprocess_func, num_proc=num_workers)
-    ds = ds.map(prepare_dataset_func)
+    else:
+        mapper = get_mapper(keep_chars, feature_extractor, tokenizer)
+        ds = ds.map(get_mapper, num_proc=num_workers)
 
     # write a preprocessed dataset to huggingface hub
     print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
@@ -94,10 +95,6 @@ def merge_datasets(
     Returns:
         dataset (Dataset): preprocesed and merged dataset
     """
-
-    preprocess_func = get_preprocess_func(keep_chars)
-    prepare_dataset = get_prepare_dataset_func(feature_extractor, tokenizer, merge_audio_to_max)
-
     ds_list = []
     for dataset_name in dataset_string.split(','):
         dataset_name, config, splits = dataset_name.split('|')
@@ -105,7 +102,7 @@ def merge_datasets(
         for split in splits.split('+'):
             ds = read_single_dataset(
                 dataset_name, config, split,
-                preprocess_func, prepare_dataset, 
+                keep_chars, feature_extractor, tokenizer,
                 username, read_from_preprocessed, num_workers, merge_audio_to_max
             )
             ds_list.append(ds)
@@ -118,46 +115,51 @@ def merge_datasets(
     return ds
 
 
-def get_preprocess_func(keep_chars):
-    def preprocess_func(batch):
-        batch[text_column] = re.sub(f"[^{keep_chars}]", "", batch[text_column].lower())
-        return batch
-    return preprocess_func
+def get_batch_mapper_merging_max_duration(
+    keep_chars: str,
+    feature_extractor: FeatureExtractionMixin,
+    tokenizer: PreTrainedTokenizer):
+
+    def text_column_normalize(text):
+        return re.sub(f"[^{keep_chars}]", "", text.lower())
+
+    def mapper(batch):
+        bs = len(batch[text_column])
+        result = {'input_features': [], 'labels': []}
+        list_arr, list_text, total = [], [], 0
+        for i in range(bs + 1):
+            if i == bs or total + batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE > MAX_AUDIO_DURATION:
+                if total == 0: continue # because it could be evenly distributed when i == bs
+                result['input_features'].append(
+                    feature_extractor(np.concatenate(list_arr), sampling_rate=DEFAULT_SAMPLING_RATE).input_features[0]
+                )
+                result['labels'].append(
+                    tokenizer(text_column_normalize(' '.join(list_text))).input_ids
+                )
+                list_arr, list_text, total = [], [], 0
+            if i < bs:
+                duration = batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
+                if duration > MAX_AUDIO_DURATION: continue
+                total += duration
+                list_arr.append(batch[audio_column][i]['array'])
+                list_text.append(batch[text_column][i])
+        return result
+    return mapper
 
 
-def get_prepare_dataset_func(feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer, merge_audio_to_max: bool):
-    """_summary_
+def get_mapper(
+    keep_chars: str,
+    feature_extractor: FeatureExtractionMixin,
+    tokenizer: PreTrainedTokenizer):
 
-    Args:
-        feature_extractor (FeatureExtractionMixin): _description_
-        tokenizer (PreTrainedTokenizer): _description_
-        merge_audio_to_max (bool): if `True`, we can assume that `merge_audio_mapper` applied and `audio` column no longer exists.
-    """
-    def prepare_dataset(batch):
-        audio = batch if merge_audio_to_max else batch["audio"]
-        batch["input_features"] = feature_extractor(audio["array"], sampling_rate=audio["sampling_rate"]).input_features[0]
-        batch["labels"] = tokenizer(batch[text_column]).input_ids
-        return batch
+    def text_column_normalize(text):
+        return re.sub(f"[^{keep_chars}]", "", text.lower())
 
-    return prepare_dataset
-
-
-def merge_audio_mapper(batch):
-    bs = len(batch[text_column])
-    result = {'array': [], text_column: [], 'sampling_rate': []}
-    list_arr, list_text, total = [], [], 0
-    for i in range(bs + 1):
-        if i == bs or total + batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE > MAX_AUDIO_DURATION:
-            if total == 0: continue # because it could be evenly distributed when i == bs
-            result['array'].append(np.concatenate(list_arr))
-            result[text_column].append(' '.join(list_text))
-            result['sampling_rate'].append(DEFAULT_SAMPLING_RATE)
-            list_arr, list_text, total = [], [], 0
-        if i < bs:
-            duration = batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
-            if duration > MAX_AUDIO_DURATION: continue
-            total += duration
-            list_arr.append(batch[audio_column][i]['array'])
-            list_text.append(batch[text_column][i])
-    return result
+    def mapper(example):
+        return {
+            'input_features': feature_extractor(example[audio_column]['array'], sampling_rate=DEFAULT_SAMPLING_RATE).input_features[0],
+            'labels': tokenizer(text_column_normalize(example[text_column])).input_ids
+        }
+    
+    return mapper
 
