@@ -61,7 +61,7 @@ def read_single_dataset(
     assert type(ds) == Dataset
     if merge_audio_to_max:
         print('[IMPORTANT] dataset size BEFORE merging:', ds.num_rows)
-        ds = ds.map(merge_audio_mapper, batched=True, batch_size=30, remove_columns=list(ds.features))
+        ds = ds.map(merge_audio_mapper, batched=True, batch_size=30, remove_columns=list(ds.features), num_proc=num_workers)
         print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
 
     ds = ds.map(preprocess_func, num_proc=num_workers)
