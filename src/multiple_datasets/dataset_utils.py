@@ -153,8 +153,10 @@ def merge_audio_mapper(batch):
             result['sampling_rate'].append(DEFAULT_SAMPLING_RATE)
             list_arr, list_text, total = [], [], 0
         if i < bs:
+            duration = batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
+            if duration > MAX_AUDIO_DURATION: continue
+            total += duration
             list_arr.append(batch[audio_column][i]['array'])
             list_text.append(batch[text_column][i])
-            total += batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
     return result
 
