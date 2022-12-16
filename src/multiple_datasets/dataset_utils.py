@@ -8,7 +8,7 @@ from transformers.feature_extraction_utils import FeatureExtractionMixin
 text_column_names = set(['sentence', 'transcription', 'transciption']) # possible text column choices
 audio_column = 'audio'
 text_column = 'transcription'
-MAX_AUDIO_DURATION = 30
+MAX_AUDIO_DURATION = 30 # because of whisper model input is 30 second, TODO: refer to paper
 KEEP_CHARS = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
 DEFAULT_SAMPLING_RATE = 16_000
 

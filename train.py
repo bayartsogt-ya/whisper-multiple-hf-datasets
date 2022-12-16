@@ -33,8 +33,8 @@ if __name__ == '__main__':
     parser.add_argument('--version', default=1, type=int)
 
     # for reading and writing preprocessed dataset
-    parser.add_argument('--read-from-preprocessed', action='store_true', help='if True, it will try to read from preprocessed dataset handle')
     parser.add_argument('--hf-username', type=str, required=True)
+    parser.add_argument('--read-from-preprocessed', action='store_true', help='if True, it will try to read from preprocessed dataset handle')
     parser.add_argument('--merge-audio-to-max', action='store_true', help='if True, then it will merge audios to `dataset_utils.MAX_AUDIO_DURATION`')
 
 

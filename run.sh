@@ -10,4 +10,5 @@ python train.py \
     --num-workers 8 \
     --hf-username <your-huggingface-username> \
     --read-from-preprocessed \
-    --version 2 \
+    --merge-audio-to-max \
+    --version <version-number-to-be-added-to-resulting-model-card>
