@@ -62,11 +62,11 @@ def read_single_dataset(
     if merge_audio_to_max:
         print('[IMPORTANT] dataset size BEFORE merging:', ds.num_rows)
         mapper = get_batch_mapper_merging_max_duration(keep_chars, feature_extractor, tokenizer)
-        ds = ds.map(mapper, batched=True, batch_size=30, remove_columns=list(ds.features), num_proc=2)
+        ds = ds.map(mapper, batched=True, batch_size=64, remove_columns=list(ds.features))
         print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
     else:
         mapper = get_mapper(keep_chars, feature_extractor, tokenizer)
-        ds = ds.map(get_mapper, num_proc=num_workers)
+        ds = ds.map(get_mapper)
 
     # write a preprocessed dataset to huggingface hub
     print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
