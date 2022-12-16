@@ -34,11 +34,11 @@ if __name__ == '__main__':
 
     # for reading and writing preprocessed dataset
     parser.add_argument('--hf-username', type=str, required=True)
-    parser.add_argument('--read-from-preprocessed', action='store_true', help='if True, it will try to read from preprocessed dataset handle')
-    parser.add_argument('--merge-audio-to-max', action='store_true', help='if True, then it will merge audios to `dataset_utils.MAX_AUDIO_DURATION`')
+    parser.add_argument('--read-from-preprocessed', action='store_true', help='if passed, it will try to read from preprocessed dataset handle')
+    parser.add_argument('--merge-audio-to-max', action='store_true', help='if passed, then it will merge audios to `dataset_utils.MAX_AUDIO_DURATION`')
     
     # Trainer.train()
-    parser.add_argument('--resume-from-checkpoint', action='store_true', help='if True, training will start from the latest checkpoint')
+    parser.add_argument('--resume-from-checkpoint', action='store_true', help='if passed, training will start from the latest checkpoint')
 
 
     args = parser.parse_args()
