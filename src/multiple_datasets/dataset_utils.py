@@ -61,9 +61,9 @@ def read_single_dataset(
     assert type(ds) == Dataset
     if merge_audio_to_max:
         print('[IMPORTANT] dataset size BEFORE merging:', ds.num_rows)
-        ds = ds.map(merge_audio_mapper, batched=True, batch_size=10, remove_columns=list(ds.features), num_proc=num_workers)
+        ds = ds.map(merge_audio_mapper, batched=True, batch_size=30, remove_columns=list(ds.features))
+        ds.set_format(type="np")
         print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
-
     ds = ds.map(preprocess_func, num_proc=num_workers)
     ds = ds.map(prepare_dataset_func)
 
@@ -147,14 +147,14 @@ def merge_audio_mapper(batch):
     result = {'array': [], text_column: [], 'sampling_rate': []}
     list_arr, list_text, total = [], [], 0
     for i in range(bs + 1):
-        if i == bs or total + batch[audio_column][i]['array'].shape[0] / 16_000 > 30.:
+        if i == bs or total + batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE > MAX_AUDIO_DURATION:
             result['array'].append(np.concatenate(list_arr))
             result[text_column].append(' '.join(list_text))
-            result['sampling_rate'].append(16_000)
+            result['sampling_rate'].append(DEFAULT_SAMPLING_RATE)
             list_arr, list_text, total = [], [], 0
         if i < bs:
             list_arr.append(batch[audio_column][i]['array'])
             list_text.append(batch[text_column][i])
-            total += batch[audio_column][i]['array'].shape[0] / 16_000
+            total += batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
     return result
 
