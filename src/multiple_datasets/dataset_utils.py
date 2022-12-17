@@ -11,6 +11,7 @@ text_column = 'transcription'
 MAX_AUDIO_DURATION = 30 # because of whisper model input is 30 second, TODO: refer to paper
 KEEP_CHARS = " абвгдеёжзийклмноөпрстуүфхцчшъыьэюя"
 DEFAULT_SAMPLING_RATE = 16_000
+MAX_LENGTH = 448
 
 
 def get_preprocessed_dataset_name(dataset_name, config, split, prefix):
@@ -130,12 +131,11 @@ def get_batch_mapper_merging_max_duration(
         for i in range(bs + 1):
             if i == bs or total + batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE > MAX_AUDIO_DURATION:
                 if total == 0: continue # because it could be evenly distributed when i == bs
-                result['input_features'].append(
-                    feature_extractor(np.concatenate(list_arr), sampling_rate=DEFAULT_SAMPLING_RATE).input_features[0]
-                )
-                result['labels'].append(
-                    tokenizer(text_column_normalize(' '.join(list_text))).input_ids
-                )
+                tokens = tokenizer(text_column_normalize(' '.join(list_text))).input_ids
+                if len(tokens) > MAX_LENGTH: continue # too long -> might mislead to not-aligning problem
+
+                result['input_features'].append(feature_extractor(np.concatenate(list_arr), sampling_rate=DEFAULT_SAMPLING_RATE).input_features[0])
+                result['labels'].append(tokens)
                 list_arr, list_text, total = [], [], 0
             if i < bs:
                 duration = batch[audio_column][i]['array'].shape[0] / DEFAULT_SAMPLING_RATE
