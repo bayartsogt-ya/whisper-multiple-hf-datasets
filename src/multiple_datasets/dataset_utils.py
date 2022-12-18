@@ -26,15 +26,14 @@ def get_preprocessed_dataset_name(dataset_name, config, split, prefix):
 def read_single_dataset(
     dataset_name: str, config: str, split: str, # dataset info
     keep_chars: str, feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer,
-    username: str, read_from_preprocessed: bool, # read from preprocessed dataset
-    num_workers: int, merge_audio_to_max: bool
+    username: str, use_cached_ds: bool, merge_audio_to_max: bool # read from preprocessed dataset
 ):
     # pp -> Pre-Processed
     # mpp -> Merge audios to 30 sec and Pre-Processed
     prefix = ('m' if merge_audio_to_max else '') + 'pp'
     preprocessed_dataset_name = get_preprocessed_dataset_name(dataset_name, config, split, prefix)
 
-    if read_from_preprocessed:
+    if use_cached_ds:
         # read from preprocessed dataset repo
         # TODO: check not just name but if all the metadata args matches our expectation
         # cached dataset will always read with `train` split
@@ -70,8 +69,9 @@ def read_single_dataset(
         ds = ds.map(get_mapper)
 
     # write a preprocessed dataset to huggingface hub
-    print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
-    ds.push_to_hub(preprocessed_dataset_name, private=True)
+    if use_cached_ds:
+        print(f'--------> Writing to HF Hub {preprocessed_dataset_name}')
+        ds.push_to_hub(preprocessed_dataset_name, private=True)
     
     return ds
 
@@ -79,7 +79,7 @@ def read_single_dataset(
 def merge_datasets(
     dataset_string: str, interleave: bool,
     keep_chars: str, feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer,
-    username: str, read_from_preprocessed: bool, num_workers: int, merge_audio_to_max: bool) -> Dataset:
+    username: str, use_cached_ds: bool, num_workers: int, merge_audio_to_max: bool) -> Dataset:
     """Read multiple datasets and upload preprocessed dataset for reading later on.
 
     Args:
@@ -89,7 +89,7 @@ def merge_datasets(
         feature_extractor (FeatureExtractionMixin): Feature extractor (e.g. WhisperFeatureExtractor)
         tokenizer (PreTrainedTokenizer): Tokenizer (e.g. WhisperTokenizer)
         username (str): huggingface handle for reading preprocessed dataset
-        read_from_preprocessed (bool): whether to lead from preprocessed or not
+        use_cached_ds (bool): whether to lead from preprocessed or not
         num_workers (int): number of workers to be used during `map` processing
         merge_audio_to_max (bool): if True, then it will merge audios to `MAX_AUDIO_DURATION`
 
@@ -104,7 +104,7 @@ def merge_datasets(
             ds = read_single_dataset(
                 dataset_name, config, split,
                 keep_chars, feature_extractor, tokenizer,
-                username, read_from_preprocessed, num_workers, merge_audio_to_max
+                username, use_cached_ds, num_workers, merge_audio_to_max
             )
             ds_list.append(ds)
 

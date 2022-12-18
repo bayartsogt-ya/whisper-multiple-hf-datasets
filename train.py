@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     # for reading and writing preprocessed dataset
     parser.add_argument('--hf-username', type=str, required=True)
-    parser.add_argument('--read-from-preprocessed', action='store_true', help='if passed, it will try to read from preprocessed dataset handle')
+    parser.add_argument('--use-cached-ds', action='store_true', help='if passed, it will try to read from preprocessed dataset handle')
     parser.add_argument('--merge-audio-to-max', action='store_true', help='if passed, then it will merge audios to `dataset_utils.MAX_AUDIO_DURATION`')
     
     # Trainer.train()
@@ -71,12 +71,12 @@ if __name__ == '__main__':
     train_ds = merge_datasets(
         args.train_datasets, args.interleave,
         args.keep_chars, feature_extractor, tokenizer,
-        args.hf_username, args.read_from_preprocessed, args.num_workers, args.merge_audio_to_max)
+        args.hf_username, args.use_cached_ds, args.num_workers, args.merge_audio_to_max)
     
     eval_ds = merge_datasets(
         args.eval_datasets, False,
         args.keep_chars, feature_extractor, tokenizer,
-        args.hf_username, args.read_from_preprocessed, args.num_workers, args.merge_audio_to_max)
+        args.hf_username, args.use_cached_ds, args.num_workers, args.merge_audio_to_max)
 
 
     # Train
