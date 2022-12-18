@@ -79,7 +79,7 @@ def read_single_dataset(
 def merge_datasets(
     dataset_string: str, interleave: bool,
     keep_chars: str, feature_extractor: FeatureExtractionMixin, tokenizer: PreTrainedTokenizer,
-    username: str, use_cached_ds: bool, num_workers: int, merge_audio_to_max: bool) -> Dataset:
+    username: str, use_cached_ds: bool, merge_audio_to_max: bool) -> Dataset:
     """Read multiple datasets and upload preprocessed dataset for reading later on.
 
     Args:
@@ -90,7 +90,6 @@ def merge_datasets(
         tokenizer (PreTrainedTokenizer): Tokenizer (e.g. WhisperTokenizer)
         username (str): huggingface handle for reading preprocessed dataset
         use_cached_ds (bool): whether to lead from preprocessed or not
-        num_workers (int): number of workers to be used during `map` processing
         merge_audio_to_max (bool): if True, then it will merge audios to `MAX_AUDIO_DURATION`
 
     Returns:
@@ -104,7 +103,7 @@ def merge_datasets(
             ds = read_single_dataset(
                 dataset_name, config, split,
                 keep_chars, feature_extractor, tokenizer,
-                username, use_cached_ds, num_workers, merge_audio_to_max
+                username, use_cached_ds, merge_audio_to_max
             )
             ds_list.append(ds)
 
