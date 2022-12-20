@@ -66,7 +66,7 @@ def read_single_dataset(
         print('[IMPORTANT] dataset size AFTER merging:', ds.num_rows)
     else:
         mapper = get_mapper(keep_chars, feature_extractor, tokenizer)
-        ds = ds.map(get_mapper)
+        ds = ds.map(mapper)
 
     # write a preprocessed dataset to huggingface hub
     if use_cached_ds:
